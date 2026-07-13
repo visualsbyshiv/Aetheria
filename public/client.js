@@ -821,6 +821,10 @@ socket.on('playerMoved', (data) => {
     players[data.id].y = data.y;
     players[data.id].lat = data.lat;
     players[data.id].lng = data.lng;
+    if (data.heading !== undefined) {
+      players[data.id].heading = data.heading;
+      players[data.id].facingAngle = data.heading;
+    }
   }
 });
 
@@ -1025,6 +1029,33 @@ socket.on('playerClassChanged', (data) => {
       updatePlayerMeshClass(data.id, data.class, data.gender);
     }
   }
+});
+
+// Real-time Combat telemetry alerts
+socket.on('playerFiredLaser', (data) => {
+  if (players[data.id]) {
+    players[data.id].heading = data.heading;
+    players[data.id].facingAngle = data.heading;
+    fireLaser(data.id);
+  }
+});
+
+socket.on('playerDeployedShield', (data) => {
+  deployShield(data.id);
+});
+
+socket.on('botDestroyed', (data) => {
+  if (players[data.killerId]) {
+    players[data.killerId].score = data.killerScore;
+  }
+  
+  const bot = players[data.botId];
+  if (bot) {
+    spawnSparks(bot.renderX, bot.renderY, '#ff00ea');
+  }
+  
+  appendEngineLog(`> BOT ELIMINATED: Sector cleared by pilot ${data.killerName}.`);
+  updateLeaderboard();
 });
 
 // Chat Log Events
@@ -1232,7 +1263,7 @@ function updateLocalPlayer() {
     
     // If coordinates changed, notify server
     if (me.x !== oldX || me.y !== oldY) {
-      socket.emit('playerMove', { x: me.x, y: me.y });
+      socket.emit('playerMove', { x: me.x, y: me.y, heading: me.facingAngle || 0 });
       
       // Add thrust engine particles
       if (Math.random() < 0.4) {
@@ -1364,13 +1395,18 @@ function renderCanvas() {
     
     if (speed > 0.05) {
       const heading = Math.atan2(dz, dx);
-      // Spaceship faces movement axis
-      meshGroup.rotation.y = -heading + Math.PI / 2;
+      p.facingAngle = -heading + Math.PI / 2;
+      meshGroup.rotation.y = p.facingAngle;
     } else {
-      // Idle rotation for Athena
-      if (p.gender === 'female') {
-        meshGroup.rotation.y += 0.015;
+      if (p.facingAngle === undefined) {
+        p.facingAngle = p.heading || 0;
       }
+      
+      // Idle rotation for female Athena
+      if (p.gender === 'female') {
+        p.facingAngle += 0.015;
+      }
+      meshGroup.rotation.y = p.facingAngle;
     }
     
     // Save last coords
@@ -1380,6 +1416,9 @@ function renderCanvas() {
       console.error('Error rendering player mesh in renderCanvas:', id, err);
     }
   });
+
+  // 1.5. Update and render active combat lasers
+  updateLasers();
 
   // 2. UPDATE AND SPAWN ORB MESHES
   const activeOrbIds = new Set(orbs.map(o => o.id));
@@ -2549,3 +2588,289 @@ setInterval(() => {
     appendEngineLog(`> ${log}`);
   }
 }, 2000);
+
+// -----------------------------------------------------------------------------
+// 14. 3D HOLOGRAM PREVIEW, COMBAT PROJECTILES & SHIELD SYSTEMS
+// -----------------------------------------------------------------------------
+
+// Initialize pre-login 3D hologram avatar
+let hologramScene, hologramCamera, hologramRenderer, hologramMesh;
+
+function initHologramPreview() {
+  const canvas = document.getElementById('hologram-preview-canvas');
+  if (!canvas) return;
+  
+  const width = canvas.clientWidth || 300;
+  const height = canvas.clientHeight || 180;
+  
+  hologramScene = new THREE.Scene();
+  hologramCamera = new THREE.PerspectiveCamera(45, width / height, 0.1, 1000);
+  hologramCamera.position.set(0, 0, 30);
+  
+  hologramRenderer = new THREE.WebGLRenderer({ canvas: canvas, alpha: true, antialias: true });
+  hologramRenderer.setSize(width, height);
+  hologramRenderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+  
+  // Lights
+  const ambient = new THREE.AmbientLight(0xffffff, 1.2);
+  hologramScene.add(ambient);
+  const directional = new THREE.DirectionalLight(0x00f2fe, 1.8);
+  directional.position.set(5, 5, 5);
+  hologramScene.add(directional);
+  
+  // Geometry
+  const geometry = new THREE.OctahedronGeometry(9, 2);
+  const material = new THREE.MeshBasicMaterial({
+    color: 0x00f2fe,
+    wireframe: true,
+    transparent: true,
+    opacity: 0.75
+  });
+  hologramMesh = new THREE.Mesh(geometry, material);
+  hologramScene.add(hologramMesh);
+  
+  const innerGeom = new THREE.TorusGeometry(5, 1, 8, 24);
+  const innerMat = new THREE.MeshBasicMaterial({
+    color: 0xff00ea,
+    wireframe: true,
+    transparent: true,
+    opacity: 0.8
+  });
+  const innerMesh = new THREE.Mesh(innerGeom, innerMat);
+  innerMesh.rotation.x = Math.PI / 2;
+  hologramMesh.add(innerMesh);
+  
+  function animateHologram() {
+    if (isJoined) {
+      hologramRenderer.dispose();
+      return;
+    }
+    requestAnimationFrame(animateHologram);
+    
+    hologramMesh.rotation.y += 0.012;
+    hologramMesh.rotation.z += 0.006;
+    
+    // Match carousel select colors
+    const cls = cyberClasses[activeClassIndex];
+    if (cls) {
+      if (cls.color === "#ff00ea") {
+        material.color.setHex(0xff00ea);
+        innerMat.color.setHex(0x00f2fe);
+      } else if (cls.color === "#ffd700") {
+        material.color.setHex(0xffd700);
+        innerMat.color.setHex(0xff00ea);
+      } else {
+        material.color.setHex(0x00f2fe);
+        innerMat.color.setHex(0xff00ea);
+      }
+    }
+    
+    hologramRenderer.render(hologramScene, hologramCamera);
+  }
+  animateHologram();
+}
+
+// Call pre-login hologram loader
+initHologramPreview();
+
+// Web Audio API Synthesizer (Zero asset audio)
+let audioCtx = null;
+
+function playLaserSound() {
+  try {
+    if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    const osc = audioCtx.createOscillator();
+    const gain = audioCtx.createGain();
+    
+    osc.connect(gain);
+    gain.connect(audioCtx.destination);
+    
+    osc.frequency.setValueAtTime(900, audioCtx.currentTime);
+    osc.frequency.exponentialRampToValueAtTime(180, audioCtx.currentTime + 0.18);
+    
+    gain.gain.setValueAtTime(0.12, audioCtx.currentTime);
+    gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.18);
+    
+    osc.start();
+    osc.stop(audioCtx.currentTime + 0.18);
+  } catch (e) {
+    console.warn("Audio Context blocked by browser auto-play policy.");
+  }
+}
+
+// Laser project storage array
+let lasers = [];
+
+function fireLaser(playerId) {
+  const p = players[playerId];
+  if (!p) return;
+  
+  const heading = p.facingAngle || 0;
+  
+  // Laser geometry
+  const geometry = new THREE.CylinderGeometry(1.2, 1.2, 16, 6);
+  geometry.rotateX(Math.PI / 2);
+  
+  const targetColor = playerId === selfId ? 0xff00ea : 0x00f2fe;
+  const material = new THREE.MeshBasicMaterial({
+    color: targetColor,
+    transparent: true,
+    opacity: 0.95
+  });
+  
+  const laserMesh = new THREE.Mesh(geometry, material);
+  laserMesh.position.set(p.renderX, 14, p.renderY);
+  
+  // Trajectory direction
+  const speed = 14;
+  const vx = Math.sin(heading) * speed;
+  const vz = Math.cos(heading) * speed;
+  
+  laserMesh.rotation.y = heading;
+  scene.add(laserMesh);
+  
+  lasers.push({
+    mesh: laserMesh,
+    vx: vx,
+    vz: vz,
+    playerId: playerId,
+    createdAt: Date.now(),
+    lifeTime: 1200
+  });
+  
+  // Play sound locally
+  if (playerId === selfId) {
+    playLaserSound();
+  }
+}
+
+function updateLasers() {
+  const now = Date.now();
+  for (let i = lasers.length - 1; i >= 0; i--) {
+    const l = lasers[i];
+    
+    if (now - l.createdAt > l.lifeTime) {
+      scene.remove(l.mesh);
+      l.mesh.geometry.dispose();
+      l.mesh.material.dispose();
+      lasers.splice(i, 1);
+      continue;
+    }
+    
+    l.mesh.position.x += l.vx;
+    l.mesh.position.z += l.vz;
+    
+    // Local player hit detection validation
+    if (l.playerId === selfId) {
+      Object.keys(players).forEach(id => {
+        const target = players[id];
+        if (target.isBot) {
+          const dx = l.mesh.position.x - target.renderX;
+          const dz = l.mesh.position.z - target.renderY;
+          const dist = Math.sqrt(dx * dx + dz * dz);
+          
+          if (dist < 40) {
+            socket.emit('botHit', { botId: id });
+            
+            // Delete laser projectile
+            scene.remove(l.mesh);
+            l.mesh.geometry.dispose();
+            l.mesh.material.dispose();
+            lasers.splice(i, 1);
+          }
+        }
+      });
+    }
+  }
+}
+
+// Deploy protective shield bubble
+function deployShield(playerId) {
+  const p = players[playerId];
+  if (!p) return;
+  
+  const meshGroup = playerMeshes[playerId];
+  if (!meshGroup) return;
+  
+  const geom = new THREE.SphereGeometry(24, 16, 16);
+  const mat = new THREE.MeshBasicMaterial({
+    color: 0x00f2fe,
+    wireframe: true,
+    transparent: true,
+    opacity: 0.35
+  });
+  
+  const shieldMesh = new THREE.Mesh(geom, mat);
+  meshGroup.add(shieldMesh);
+  
+  p.hasShield = true;
+  
+  setTimeout(() => {
+    meshGroup.remove(shieldMesh);
+    geom.dispose();
+    mat.dispose();
+    p.hasShield = false;
+  }, 3000);
+}
+
+// Bind combat keys & click triggers
+function bindCombatControls() {
+  const btnLaser = document.getElementById('btn-fire-laser');
+  const btnShield = document.getElementById('btn-deploy-shield');
+  
+  if (btnLaser) {
+    btnLaser.addEventListener('click', () => {
+      triggerLocalLaserAttack();
+    });
+  }
+  
+  if (btnShield) {
+    btnShield.addEventListener('click', () => {
+      triggerLocalShieldDeploy();
+    });
+  }
+  
+  window.addEventListener('keydown', (e) => {
+    if (!isJoined) return;
+    
+    if (e.key === ' ' || e.code === 'Space') {
+      e.preventDefault();
+      triggerLocalLaserAttack();
+    }
+    
+    if (e.key.toLowerCase() === 'f') {
+      triggerLocalShieldDeploy();
+    }
+  });
+}
+
+function triggerLocalLaserAttack() {
+  const me = players[selfId];
+  if (!me) return;
+  
+  const now = Date.now();
+  if (me.lastLaserTime && now - me.lastLaserTime < 450) return;
+  me.lastLaserTime = now;
+  
+  fireLaser(selfId);
+  socket.emit('fireLaser', { heading: me.facingAngle || 0 });
+}
+
+function triggerLocalShieldDeploy() {
+  const me = players[selfId];
+  if (!me) return;
+  
+  const now = Date.now();
+  if (me.lastShieldTime && now - me.lastShieldTime < 8000) {
+    showLevelUpNotification("🛡️ SHIELD CHARGING: Systems cooling down.");
+    return;
+  }
+  me.lastShieldTime = now;
+  
+  deployShield(selfId);
+  socket.emit('deployShield');
+  showLevelUpNotification("🛡️ SHIELD ACTIVE: Nanite barrier online!");
+}
+
+// Start combat inputs
+bindCombatControls();

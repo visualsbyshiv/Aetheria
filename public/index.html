@@ -63,7 +63,14 @@
         <article class="dash-panel hero-panel glass-panel">
           <div class="panel-tag">SEC 01 // OVERVIEW</div>
           <h1 class="hero-title">AETHERIA: CYBER MAP</h1>
-          <p class="hero-desc">
+          
+          <!-- Pre-login Hologram Viewport -->
+          <div class="hologram-viewport-container" style="width: 100%; height: 180px; margin-bottom: 15px; position: relative; background: rgba(10,17,40,0.4); border: 1px solid rgba(0,242,254,0.25); border-radius: 8px; overflow: hidden; display: flex; align-items: center; justify-content: center;">
+            <canvas id="hologram-preview-canvas" style="width: 100%; height: 100%; display: block;"></canvas>
+            <div style="position: absolute; bottom: 5px; left: 50%; transform: translateX(-50%); font-family: 'Orbitron', sans-serif; font-size: 0.55rem; color: #00f2fe; text-shadow: 0 0 5px #00f2fe; tracking-wider; font-weight: bold; width: 100%; text-align: center;">// HOLOGRAM UPLINK STATUS: ACTIVE</div>
+          </div>
+          
+          <p class="hero-desc" style="margin-bottom: 20px;">
             Tactical multiplayer deployment arena. Integrated with real-time GPS coordinates, high-precision Three.js TPP target tracking, and decentralized telemetry data streaming. Connect your neural link to locate allied units and neutralize hostile threats.
           </p>
           <button type="button" id="btn-play-arena" class="dash-btn glow-button">
@@ -279,16 +286,18 @@
         </ol>
       </aside>
 
-      <!-- Active Controls Guide & Vector D-Pad (Bottom Right) -->
+      <!-- Active Controls Guide & Vector D-Pad & Combat Actions (Bottom Right) -->
       <section id="hud-bottom-right" class="hud-item glass-panel" style="display: flex; flex-direction: column; align-items: center; gap: 8px;">
-        <div class="controls-guide" style="border-bottom: 1px dashed rgba(31,61,122,0.3); padding-bottom: 8px; margin-bottom: 4px; width: 100%; display: flex; justify-content: center; gap: 6px;">
+        <div class="controls-guide" style="border-bottom: 1px dashed rgba(31,61,122,0.3); padding-bottom: 6px; margin-bottom: 2px; width: 100%; display: flex; justify-content: center; gap: 6px;">
           <span class="key">W</span>
           <span class="key">A</span>
           <span class="key">S</span>
           <span class="key">D</span>
           <span class="key-desc" style="line-height: 2;">Move</span>
         </div>
-        <div class="dpad-grid" style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 4px; width: 90px; height: 90px;">
+        
+        <!-- D-Pad movement controls -->
+        <div class="dpad-grid" style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 4px; width: 90px; height: 90px; border-bottom: 1px dashed rgba(31,61,122,0.3); padding-bottom: 8px; margin-bottom: 4px;">
           <div></div>
           <button id="dpad-up" class="dpad-btn">▲</button>
           <div></div>
@@ -298,6 +307,12 @@
           <div></div>
           <button id="dpad-down" class="dpad-btn">▼</button>
           <div></div>
+        </div>
+
+        <!-- Combat action buttons -->
+        <div class="combat-grid" style="display: flex; gap: 6px; width: 100%;">
+          <button id="btn-fire-laser" class="combat-btn laser-btn" style="flex-grow: 1;">💥 LASER</button>
+          <button id="btn-deploy-shield" class="combat-btn shield-btn" style="flex-grow: 1;">🛡️ SHIELD</button>
         </div>
       </section>
 

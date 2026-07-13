@@ -1776,3 +1776,37 @@ body, html {
   box-shadow: 0 0 25px rgba(255, 215, 0, 0.45) !important;
 }
 
+/* Combat buttons styling */
+.combat-btn {
+  font-family: 'Orbitron', sans-serif;
+  font-size: 0.62rem !important;
+  font-weight: 900;
+  padding: 8px 4px;
+  border-radius: 6px;
+  cursor: pointer;
+  background: rgba(10, 17, 40, 0.85);
+  transition: all 0.25s ease;
+  user-select: none;
+}
+
+.laser-btn {
+  border: 1px solid rgba(255, 0, 234, 0.4) !important;
+  color: #ff00ea !important;
+}
+
+.laser-btn:hover {
+  background: rgba(255, 0, 234, 0.15) !important;
+  border-color: #ff00ea !important;
+  box-shadow: 0 0 10px rgba(255, 0, 234, 0.4) !important;
+}
+
+.shield-btn {
+  border: 1px solid rgba(0, 242, 254, 0.4) !important;
+  color: #00f2fe !important;
+}
+
+.shield-btn:hover {
+  background: rgba(0, 242, 254, 0.15) !important;
+  border-color: #00f2fe !important;
+  box-shadow: 0 0 10px rgba(0, 242, 254, 0.4) !important;
+}

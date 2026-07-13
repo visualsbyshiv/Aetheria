@@ -279,7 +279,7 @@ setInterval(() => {
       
       if (dist < 80) {
         let isHostile = other.isBot || (human.enemies && human.enemies.includes(other.name));
-        if (isHostile) {
+        if (isHostile && !human.hasShield) {
           if (human.stats) {
             human.stats.health = Math.max(0, human.stats.health - 2);
             human.stats.damage = Math.max(20, human.stats.damage - 1);
@@ -623,6 +623,7 @@ io.on('connection', (socket) => {
     if (player) {
       player.x = Math.max(20, Math.min(MAP_WIDTH - 20, data.x));
       player.y = Math.max(20, Math.min(MAP_HEIGHT - 20, data.y));
+      player.heading = data.heading || 0;
 
       // Sync simulated Lat/Lng coordinates for keyboard fallbacks
       player.lat = CENTER_LAT + (player.y - 1000) * 0.0000035;
@@ -633,8 +634,64 @@ io.on('connection', (socket) => {
         x: player.x,
         y: player.y,
         lat: player.lat,
-        lng: player.lng
+        lng: player.lng,
+        heading: player.heading
       });
+    }
+  });
+
+  // Handle firing combat lasers
+  socket.on('fireLaser', (data) => {
+    const player = players[socket.id];
+    if (player) {
+      player.heading = data.heading || 0;
+      socket.broadcast.emit('playerFiredLaser', {
+        id: socket.id,
+        heading: player.heading
+      });
+    }
+  });
+
+  // Handle shield deployment
+  socket.on('deployShield', () => {
+    const player = players[socket.id];
+    if (player) {
+      player.hasShield = true;
+      socket.broadcast.emit('playerDeployedShield', {
+        id: socket.id
+      });
+      
+      // Reset shield state after 3 seconds
+      setTimeout(() => {
+        if (players[socket.id]) {
+          players[socket.id].hasShield = false;
+        }
+      }, 3000);
+    }
+  });
+
+  // Handle bot hit reports
+  socket.on('botHit', (data) => {
+    const player = players[socket.id];
+    const bot = players[data.botId];
+    if (player && bot && bot.isBot) {
+      player.score += 25;
+      updateHighScoreInDB(player.name, player.score);
+      
+      // Notify all clients of bot destruction
+      io.emit('botDestroyed', {
+        botId: data.botId,
+        killerId: socket.id,
+        killerName: player.name,
+        killerScore: player.score
+      });
+      
+      // Respawn bot at random location
+      const padding = 100;
+      bot.x = Math.floor(Math.random() * (MAP_WIDTH - padding * 2)) + padding;
+      bot.y = Math.floor(Math.random() * (MAP_HEIGHT - padding * 2)) + padding;
+      bot.lat = CENTER_LAT + (bot.y - 1000) * 0.0000035;
+      bot.lng = CENTER_LNG + (bot.x - 1000) * 0.0000045;
     }
   });
 
