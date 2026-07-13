@@ -1,0 +1,355 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Aetheria - Real-Time Multiplayer Sci-Fi Canvas Arena</title>
+  <meta name="description" content="Enter Aetheria, a high-performance real-time multiplayer HTML5 Canvas game. Select your avatar, collect glowing energy orbs, chat with other players, and top the leaderboard.">
+  
+  <!-- Google Fonts for premium typography -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;700&family=Orbitron:wght@400;600;800;900&display=swap" rel="stylesheet">
+  
+  <!-- Leaflet Map CSS CDN -->
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin=""/>
+  <!-- Three.js 3D WebGL Library CDN -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+  <!-- Custom Stylesheet -->
+  <link rel="stylesheet" href="style.css?v=2.0.0">
+</head>
+<body>
+  
+  <!-- Fullscreen Space Dust Canvas Background (Decorative behind the menu) -->
+  <canvas id="bg-starfield" class="starfield"></canvas>
+
+  <main id="app-container">
+    <!-- 1. LOGIN / CHARACTER SELECT OVERLAY -->
+    <!-- 1. TACTICAL SCI-FI CYBERPUNK AUTH DASHBOARD -->
+    <section id="auth-dashboard" class="overlay-container">
+      
+      <!-- Tech Grid Overlay Pattern (For AAA look) -->
+      <div class="tech-grid-overlay"></div>
+      <div class="scanline-overlay"></div>
+
+      <!-- HEADER NAVIGATION -->
+      <header class="dash-header">
+        <div class="dash-logo">
+          <span class="logo-symbol">▲</span> AETHERIA <span class="logo-version">v2.0.0</span>
+        </div>
+        <nav class="dash-nav">
+          <a href="#" class="nav-link active">DASHBOARD</a>
+          <a href="#" class="nav-link" onclick="alert('Access Denied: Initialize pilot uplink first.')">PILOT PROFILE</a>
+          <a href="#" class="nav-link" onclick="alert('Access Denied: Initialize pilot uplink first.')">LEADERBOARD</a>
+        </nav>
+        <div class="dash-system-status">
+          <span class="status-indicator-dot glowing"></span> SYSTEM: ONLINE
+        </div>
+      </header>
+
+      <!-- LEFT SIDEBAR -->
+      <aside class="dash-sidebar">
+        <div class="sidebar-icon" id="sidebar-radar" title="Tactical Radar">📡</div>
+        <div class="sidebar-icon" id="sidebar-alliances" title="Alliances Grid">👥</div>
+        <div class="sidebar-icon" id="sidebar-boost" title="Speed Boost">⚡</div>
+        <div class="sidebar-divider"></div>
+        <div class="sidebar-icon" id="sidebar-settings" title="System Settings">⚙️</div>
+      </aside>
+
+      <!-- MAIN CONTAINER GRID -->
+      <div class="dash-main-grid">
+        
+        <!-- SECTION 01: HERO BANNER -->
+        <article class="dash-panel hero-panel glass-panel">
+          <div class="panel-tag">SEC 01 // OVERVIEW</div>
+          <h1 class="hero-title">AETHERIA: CYBER MAP</h1>
+          <p class="hero-desc">
+            Tactical multiplayer deployment arena. Integrated with real-time GPS coordinates, high-precision Three.js TPP target tracking, and decentralized telemetry data streaming. Connect your neural link to locate allied units and neutralize hostile threats.
+          </p>
+          <button type="button" id="btn-play-arena" class="dash-btn glow-button">
+            <span>PLAY ARENA</span>
+          </button>
+        </article>
+
+        <!-- SECTION 02: TACTICAL LOADOUT -->
+        <article class="dash-panel loadout-panel glass-panel">
+          <div class="panel-tag">SEC 02 // WEAPON LOADOUT</div>
+          <div class="weapon-display">
+            <div class="weapon-info">
+              <h3 class="weapon-name">EXO-RIFLE // PHANTOM</h3>
+              <span class="weapon-class">CLASS A DEPLOYMENT</span>
+            </div>
+            <div class="weapon-preview">
+              <!-- Holographic weapon schematic using pure CSS/SVG -->
+              <svg viewBox="0 0 100 30" class="weapon-svg">
+                <path d="M 10,15 L 20,15 L 25,10 L 60,10 L 65,15 L 85,15 L 90,20 L 75,20 L 70,22 L 60,22 L 55,20 L 20,20 Z" fill="none" stroke="#00f2fe" stroke-width="1" stroke-dasharray="2,2"/>
+                <line x1="25" y1="12" x2="55" y2="12" stroke="#00f2fe" stroke-width="0.5"/>
+                <line x1="75" y1="15" x2="80" y2="20" stroke="#00f2fe" stroke-width="0.5"/>
+              </svg>
+            </div>
+          </div>
+          
+          <div class="loadout-stats">
+            <div class="stat-row">
+              <span class="stat-label">DAMAGE</span>
+              <div class="stat-bar-container">
+                <div id="bar-damage" class="stat-bar-fill" style="width: 82%"></div>
+              </div>
+              <span id="val-damage" class="stat-val">82%</span>
+            </div>
+            <div class="stat-row">
+              <span class="stat-label">RANGE</span>
+              <div class="stat-bar-container">
+                <div id="bar-range" class="stat-bar-fill" style="width: 75%"></div>
+              </div>
+              <span id="val-range" class="stat-val">75%</span>
+            </div>
+            <div class="stat-row">
+              <span class="stat-label">ACCURACY</span>
+              <div class="stat-bar-container">
+                <div id="bar-accuracy" class="stat-bar-fill" style="width: 90%"></div>
+              </div>
+              <span id="val-accuracy" class="stat-val">90%</span>
+            </div>
+          </div>
+        </article>
+
+        <!-- SECTION 03: PILOT CLASS SELECTION -->
+        <article class="dash-panel class-panel glass-panel">
+          <div class="panel-tag">SEC 03 // PILOT CLASS SELECTION</div>
+          <div class="class-selection-container">
+            
+            <!-- MANTA Class (Ares Archetype) -->
+            <div class="avatar-option active" data-gender="male" data-class="manta">
+              <div class="class-header">
+                <span class="class-code">MN-01</span>
+                <span class="class-title">MANTA</span>
+              </div>
+              <div class="avatar-preview-canvas-holder">
+                <canvas id="canvas-preview-male" width="80" height="80"></canvas>
+              </div>
+              <div class="class-footer">
+                <span class="option-label">ARES // SHIELD</span>
+              </div>
+            </div>
+
+            <!-- GHOST Class (Athena Archetype) -->
+            <div class="avatar-option" data-gender="female" data-class="ghost">
+              <div class="class-header">
+                <span class="class-code">GH-02</span>
+                <span class="class-title">GHOST</span>
+              </div>
+              <div class="avatar-preview-canvas-holder">
+                <canvas id="canvas-preview-female" width="80" height="80"></canvas>
+              </div>
+              <div class="class-footer">
+                <span class="option-label">ATHENA // HALO</span>
+              </div>
+            </div>
+
+            <!-- SCYLA Class (Athena Archetype) -->
+            <div class="avatar-option" data-gender="female" data-class="scyla">
+              <div class="class-header">
+                <span class="class-code">SC-03</span>
+                <span class="class-title">SCYLA</span>
+              </div>
+              <div class="avatar-preview-canvas-holder">
+                <!-- Share Athena preview rendering for Scyla -->
+                <div class="scyla-preview-placeholder">⚜️</div>
+              </div>
+              <div class="class-footer">
+                <span class="option-label">ATHENA // CRUISE</span>
+              </div>
+            </div>
+
+          </div>
+        </article>
+      </div>
+
+      <!-- GLOWING AUTH MODAL (Pop-up on PLAY ARENA click) -->
+      <div id="auth-modal" class="auth-modal-overlay hidden">
+        <div class="glass-panel auth-card">
+          <button type="button" id="btn-close-auth" class="close-btn">×</button>
+          
+          <header class="login-header">
+            <h2>DECRYPTING UPLINK</h2>
+            <p class="subtitle">Secure terminal login / signup credentials required</p>
+          </header>
+
+          <div class="auth-tabs">
+            <button type="button" class="auth-tab active" id="tab-login" data-mode="login">LOGIN</button>
+            <button type="button" class="auth-tab" id="tab-signup" data-mode="signup">SIGNUP</button>
+          </div>
+
+          <div id="auth-error-banner" class="auth-error-banner hidden"></div>
+
+          <form id="auth-form" onsubmit="return false;">
+            <div class="input-group">
+              <label for="auth-username">PILOT CALLSIGN</label>
+              <input type="text" id="auth-username" placeholder="Enter username..." maxlength="15" required autocomplete="off">
+            </div>
+
+            <div class="input-group">
+              <label for="auth-password">ENCRYPTED KEY</label>
+              <input type="password" id="auth-password" placeholder="Enter password..." required autocomplete="off">
+            </div>
+
+            <!-- Signup Archetype group (Hidden by default, shown on signup mode) -->
+            <div class="input-group hidden" id="signup-archetype-group">
+              <label>CONFIRM ARCHETYPE FOR DEPLOYMENT</label>
+              <div class="archetype-confirm-box">
+                Selected archetype is set below in the bottom dashboard panel. Please verify class model before proceeding.
+              </div>
+            </div>
+
+            <button type="submit" id="btn-auth-submit" class="glow-button">
+              <span>ESTABLISH LINK</span>
+            </button>
+          </form>
+        </div>
+      </div>
+
+      <!-- SETTINGS / PROFILE MODAL -->
+      <div id="settings-modal" class="auth-modal-overlay hidden">
+        <div class="glass-panel auth-card">
+          <button type="button" id="btn-close-settings" class="close-btn">×</button>
+          <header class="login-header">
+            <h2>PILOT PROFILE DATABANK</h2>
+            <p class="subtitle">Secure uplink profile telemetry & settings</p>
+          </header>
+          <div class="settings-content" style="color: #ffffff; padding: 15px 0; display: flex; flex-direction: column; gap: 12px;">
+            <div class="setting-item" style="display: flex; justify-content: space-between; border-bottom: 1px solid rgba(31,61,122,0.3); padding-bottom: 8px;">
+              <span style="color: rgba(255,255,255,0.6); font-family: 'Orbitron', sans-serif; font-size: 0.8rem;">CALLSIGN:</span>
+              <strong id="settings-username" style="color: #00f2fe;">admin</strong>
+            </div>
+            <div class="setting-item" style="display: flex; justify-content: space-between; border-bottom: 1px solid rgba(31,61,122,0.3); padding-bottom: 8px;">
+              <span style="color: rgba(255,255,255,0.6); font-family: 'Orbitron', sans-serif; font-size: 0.8rem;">PILOT CLASS:</span>
+              <strong id="settings-class" style="color: #ff00ea; text-transform: uppercase;">MANTA</strong>
+            </div>
+            <div class="setting-item" style="display: flex; justify-content: space-between; border-bottom: 1px solid rgba(31,61,122,0.3); padding-bottom: 8px;">
+              <span style="color: rgba(255,255,255,0.6); font-family: 'Orbitron', sans-serif; font-size: 0.8rem;">HIGH SCORE RECORD:</span>
+              <strong id="settings-highscore" style="color: #ffd700;">150 PTS</strong>
+            </div>
+            <div class="setting-item" style="display: flex; justify-content: space-between; padding-bottom: 8px;">
+              <span style="color: rgba(255,255,255,0.6); font-family: 'Orbitron', sans-serif; font-size: 0.8rem;">DATABANK CONNECTION:</span>
+              <span style="color: #00f2fe; font-weight: bold;">AZURE CLOUD SECURE UPLINK</span>
+            </div>
+          </div>
+          <button type="button" id="btn-save-settings" class="glow-button" style="margin-top: 15px; width: 100%;">
+            <span>DISCONNECT LINK / CLOSE</span>
+          </button>
+        </div>
+      </div>
+
+    </section>
+
+    <!-- 2. GAME HUD & CANVAS CONTAINER -->
+    <section id="game-view" class="hidden">
+      <!-- Team Request Dialog Overlay (Proximity Alliance) -->
+      <div id="team-request-modal" class="glass-panel hidden">
+        <p><strong id="team-request-sender">Pilot</strong> wants to form a Team Alliance!</p>
+        <div class="modal-buttons">
+          <button id="btn-accept-team" class="modal-btn accept">Accept</button>
+          <button id="btn-decline-team" class="modal-btn decline">Decline</button>
+        </div>
+      </div>
+
+      <!-- Mission Objective UI Overlay (Top Center) -->
+      <section id="hud-mission" class="glass-panel hidden">
+        <div class="mission-header">
+          <span class="mission-alert-dot"></span>
+          <span class="mission-title">TACTICAL MISSION ACTIVE</span>
+        </div>
+        <h2 id="mission-objective">Find and Eliminate an Enemy Team</h2>
+        <div class="mission-details">
+          <div class="compass-holder">
+            <div id="mission-compass-arrow">▲</div>
+          </div>
+          <span id="mission-target-info">Nearest Hostile: None</span>
+        </div>
+      </section>
+
+      <!-- Main Game Canvas -->
+      <canvas id="game-canvas"></canvas>
+
+      <!-- Real-World Map Container (Leaflet Overlay) -->
+      <div id="real-map-container" class="hidden"></div>
+
+      <!-- Connection / Status Indicator -->
+      <header id="hud-top-left" class="hud-item glass-panel">
+        <div class="status-indicator">
+          <span class="pulse-dot online"></span>
+          <span id="ping-text">Ping: 0ms</span>
+        </div>
+        <div id="players-online-count" class="hud-stat">Players Online: 1</div>
+        <button id="btn-toggle-map" class="hud-btn glow-button-alt">
+          <span>🌐 REAL RADAR</span>
+        </button>
+      </header>
+
+      <!-- Nearby Players List Panel (Left side, below top-left status) -->
+      <section id="hud-nearby-players" class="hud-item glass-panel hidden">
+        <h4>NEARBY PILOTS</h4>
+        <ul id="nearby-players-list">
+          <!-- Dynamically populated -->
+        </ul>
+      </section>
+
+      <!-- Leaderboard (Top Right) -->
+      <aside id="hud-top-right" class="hud-item glass-panel">
+        <h3>LEADERBOARD</h3>
+        <ol id="leaderboard-list">
+          <li class="empty-list">Searching for lifeforms...</li>
+        </ol>
+      </aside>
+
+      <!-- Active Controls Guide (Bottom Right) -->
+      <section id="hud-bottom-right" class="hud-item glass-panel">
+        <div class="controls-guide">
+          <span class="key">W</span>
+          <span class="key">A</span>
+          <span class="key">S</span>
+          <span class="key">D</span>
+          <span class="key-desc">Move Avatar</span>
+        </div>
+      </section>
+
+      <!-- Mini-map (Bottom Right, Above Controls) -->
+      <section id="hud-minimap-container" class="hud-item glass-panel">
+        <canvas id="minimap-canvas" width="120" height="120"></canvas>
+        <span class="minimap-label">RADAR MAP</span>
+      </section>
+
+      <!-- Chat System (Bottom Left) -->
+      <section id="hud-bottom-left" class="chat-system glass-panel">
+        <div id="chat-messages" class="chat-log">
+          <p class="system-message">Welcome to Aetheria. Use chat to connect with other pilots.</p>
+        </div>
+        <form id="chat-form" class="chat-input-area" onsubmit="return false;">
+          <input type="text" id="chat-input" placeholder="Type a message..." maxlength="100" autocomplete="off">
+          <button type="submit" id="btn-send-chat">Send</button>
+        </form>
+      </section>
+      
+      <!-- Proximity Interaction Prompt (Center-bottom of screen) -->
+      <div id="proximity-prompt" class="hud-item glass-panel hidden">
+        <span class="prompt-key">E</span>
+        <span class="prompt-text">Interact</span>
+        <span class="prompt-separator">|</span>
+        <span class="prompt-key f-key">F</span>
+        <span class="prompt-text">Team Invite <strong id="prompt-target-name">Pilot</strong> (<span id="prompt-target-dist">0</span>m)</span>
+      </div>
+
+      <!-- Death or Respawn notification overlay (optional, but premium detail) -->
+      <div id="game-notifications" class="fade-out-notification"></div>
+    </section>
+  </main>
+
+  <!-- Socket.io client script served automatically by node backend -->
+  <script src="/socket.io/socket.io.js"></script>
+  <!-- Leaflet Map JS CDN -->
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+  <!-- Client Game Controller code -->
+  <script src="client.js?v=2.0.0"></script>
+</body>
+</html>

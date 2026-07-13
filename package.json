@@ -1,0 +1,28 @@
+{
+  "name": "realtime-multiplayer-canvas-game",
+  "version": "1.0.0",
+  "description": "A real-time multiplayer web game using HTML5 Canvas, Express, and Socket.io with high-end visuals and smooth movement.",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "dev": "nodemon server.js"
+  },
+  "keywords": [
+    "multiplayer",
+    "socket.io",
+    "canvas",
+    "express",
+    "game"
+  ],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "express": "^4.22.2",
+    "mongoose": "^9.7.4",
+    "socket.io": "^4.8.3"
+  },
+  "devDependencies": {
+    "@azure/static-web-apps-cli": "^2.0.9",
+    "nodemon": "^3.1.0"
+  }
+}
