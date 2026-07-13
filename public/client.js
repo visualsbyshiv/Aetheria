@@ -129,41 +129,155 @@ function resizeCanvas() {
 }
 window.addEventListener('resize', resizeCanvas);
 
-// Setup Avatar Select Options click event (updates selection and mesh/telemetry in real-time)
-avatarOptions.forEach(opt => {
-  opt.addEventListener('click', () => {
-    avatarOptions.forEach(o => o.classList.remove('active'));
-    opt.classList.add('active');
-    selectedGender = opt.dataset.gender;
-    const pilotClass = opt.dataset.class || 'manta';
+// Carousel Class Select telemetry mapping
+const cyberClasses = [
+  {
+    name: "NETRUNNER",
+    code: "MN-01",
+    label: "NETRUNNER // OVERDRIVE",
+    gender: "female",
+    color: "#00f2fe", // cyan
+    classKey: "manta",
+    integrity: 40,
+    overdrive: 95
+  },
+  {
+    name: "CYBER-SAMURAI",
+    code: "SM-02",
+    label: "SAMURAI // CRUISE",
+    gender: "male",
+    color: "#ff00ea", // pink
+    classKey: "ghost",
+    integrity: 85,
+    overdrive: 50
+  },
+  {
+    name: "TECH-DOC",
+    code: "TD-03",
+    label: "TECH-DOC // RECON",
+    gender: "female",
+    color: "#ffd700", // gold
+    classKey: "scyla",
+    integrity: 65,
+    overdrive: 75
+  }
+];
+
+let activeClassIndex = 0;
+let isClassLocked = false;
+
+const activeClassCard = document.getElementById("active-class-card");
+const activeClassCode = document.getElementById("active-class-code");
+const activeClassName = document.getElementById("active-class-name");
+const activeClassLabel = document.getElementById("active-class-label");
+const btnPrevClass = document.getElementById("btn-prev-class");
+const btnNextClass = document.getElementById("btn-next-class");
+const btnLockClass = document.getElementById("btn-lock-class");
+const badgeLocked = document.getElementById("badge-locked");
+
+// Dynamic Synergy Matrix HUD progress bars (Section 02)
+const barIntegrity = document.getElementById("bar-integrity");
+const valIntegrity = document.getElementById("val-integrity");
+const barOverdrive = document.getElementById("bar-overdrive");
+const valOverdrive = document.getElementById("val-overdrive");
+
+function updateCarouselSelection() {
+  const cls = cyberClasses[activeClassIndex];
+  
+  if (activeClassCode) activeClassCode.textContent = cls.code;
+  if (activeClassName) activeClassName.textContent = cls.name;
+  if (activeClassLabel) activeClassLabel.textContent = cls.label;
+  
+  // Animate stat bars in Section 02
+  if (barIntegrity && valIntegrity) {
+    barIntegrity.style.width = `${cls.integrity}%`;
+    valIntegrity.textContent = `${cls.integrity}%`;
+  }
+  if (barOverdrive && valOverdrive) {
+    barOverdrive.style.width = `${cls.overdrive}%`;
+    valOverdrive.textContent = `${cls.overdrive}%`;
+  }
+  
+  // Set default selection state variables
+  selectedGender = cls.gender;
+  const pilotClass = cls.classKey;
+  
+  // If in game session, update Three.js rendering instantly
+  if (isJoined && selfId) {
+    updatePlayerMeshClass(selfId, pilotClass, selectedGender);
+    socket.emit('selectClass', { class: pilotClass, gender: selectedGender });
+  }
+}
+
+if (btnPrevClass) {
+  btnPrevClass.addEventListener("click", () => {
+    if (isClassLocked) return;
+    activeClassIndex = (activeClassIndex - 1 + cyberClasses.length) % cyberClasses.length;
+    updateCarouselSelection();
+  });
+}
+
+if (btnNextClass) {
+  btnNextClass.addEventListener("click", () => {
+    if (isClassLocked) return;
+    activeClassIndex = (activeClassIndex + 1) % cyberClasses.length;
+    updateCarouselSelection();
+  });
+}
+
+if (btnLockClass) {
+  btnLockClass.addEventListener("click", () => {
+    isClassLocked = !isClassLocked;
+    const cls = cyberClasses[activeClassIndex];
     
-    // If authenticated and joined, update active class and emit to server
-    if (isJoined && selfId) {
-      updatePlayerMeshClass(selfId, pilotClass, selectedGender);
-      socket.emit('selectClass', { class: pilotClass, gender: selectedGender });
+    if (isClassLocked) {
+      // Apply locks and glowing states
+      if (activeClassCard) {
+        activeClassCard.classList.remove("locked-cyan", "locked-pink", "locked-gold");
+        if (cls.color === "#00f2fe") activeClassCard.classList.add("locked-cyan");
+        if (cls.color === "#ff00ea") activeClassCard.classList.add("locked-pink");
+        if (cls.color === "#ffd700") activeClassCard.classList.add("locked-gold");
+      }
+      
+      if (badgeLocked) {
+        badgeLocked.style.display = "block";
+      }
+      
+      btnLockClass.querySelector("span").textContent = "RELEASE ARCHETYPE LINK";
+      
+      // Auto trigger login submit click if not yet joined
+      if (!isJoined) {
+        appendEngineLog(`> ARCHETYPE LOCKED: ${cls.name} Cognitive Link Established.`);
+      }
+    } else {
+      // Release visual glows
+      if (activeClassCard) {
+        activeClassCard.classList.remove("locked-cyan", "locked-pink", "locked-gold");
+      }
+      if (badgeLocked) {
+        badgeLocked.style.display = "none";
+      }
+      btnLockClass.querySelector("span").textContent = "LOCK IN NEURAL ARCHETYPE";
+      appendEngineLog(`> ARCHETYPE RELEASED: Cognitive Link Severed.`);
     }
   });
-});
+}
 
-// Render dynamic avatar shapes on the preview canvases in login menu
+// Render dynamic avatar shapes on the active class preview canvas in login menu
 function startPreviewLoops() {
   let time = 0;
+  const activePreviewCanvas = document.getElementById("active-class-preview-canvas");
   
   function renderPreviews() {
     time += 0.05;
     
-    // Male Preview
-    if (previewMaleCanvas) {
-      const pCtx = previewMaleCanvas.getContext('2d');
+    if (activePreviewCanvas) {
+      const pCtx = activePreviewCanvas.getContext('2d');
       pCtx.clearRect(0, 0, 80, 80);
-      drawAvatar(pCtx, 40, 40, 'male', '#FFFFFF', time, 'Ares');
-    }
-    
-    // Female Preview
-    if (previewFemaleCanvas) {
-      const pCtx = previewFemaleCanvas.getContext('2d');
-      pCtx.clearRect(0, 0, 80, 80);
-      drawAvatar(pCtx, 40, 40, 'female', '#FFFFFF', time, 'Athena');
+      
+      const cls = cyberClasses[activeClassIndex];
+      const avatarName = cls.gender === 'male' ? 'Ares' : 'Athena';
+      drawAvatar(pCtx, 40, 40, cls.gender, cls.color, time, avatarName);
     }
     
     requestAnimationFrame(renderPreviews);
@@ -1123,6 +1237,34 @@ function updateLocalPlayer() {
       // Add thrust engine particles
       if (Math.random() < 0.4) {
         spawnThrustParticle(me.renderX, me.renderY, -moveX, -moveY, getRelationshipColor(me));
+      }
+    }
+  }
+
+  // Update D-pad Coordinate Display
+  let direction = "STANDING BY";
+  if (dx > 0 && dy === 0) direction = "MOVING EAST";
+  else if (dx < 0 && dy === 0) direction = "MOVING WEST";
+  else if (dx === 0 && dy < 0) direction = "MOVING NORTH";
+  else if (dx === 0 && dy > 0) direction = "MOVING SOUTH";
+  else if (dx > 0 && dy < 0) direction = "MOVING NORTH-EAST";
+  else if (dx < 0 && dy < 0) direction = "MOVING NORTH-WEST";
+  else if (dx > 0 && dy > 0) direction = "MOVING SOUTH-EAST";
+  else if (dx < 0 && dy > 0) direction = "MOVING SOUTH-WEST";
+
+  const coordsOverlay = document.getElementById("hud-coordinates-overlay");
+  if (coordsOverlay) {
+    const me = players[selfId];
+    if (me) {
+      coordsOverlay.textContent = `${direction} [X: ${Math.round(me.x)}, Y: ${Math.round(me.y)}]`;
+      
+      // Set glowing colors based on movement direction
+      if (direction !== "STANDING BY") {
+        coordsOverlay.style.color = "#ff00ea"; // Glowing Pink on move
+        coordsOverlay.style.textShadow = "0 0 10px #ff00ea, 0 0 5px #ff00ea";
+      } else {
+        coordsOverlay.style.color = "#00f2fe"; // Glowing Cyan when standing still
+        coordsOverlay.style.textShadow = "0 0 10px #00f2fe, 0 0 5px #00f2fe";
       }
     }
   }
@@ -2321,3 +2463,89 @@ if (btnSaveSettings && settingsModal) {
     settingsModal.classList.add('hidden');
   });
 }
+
+// -----------------------------------------------------------------------------
+// 13. PILOT CLASS CAROUSEL, D-PAD & ENGINE TELEMETRY LOGS
+// -----------------------------------------------------------------------------
+
+// Active class rendering initial setup
+updateCarouselSelection();
+
+// Bind D-pad movement triggers (mouse down & release simulation)
+function startDpadMovement(keyName) {
+  keys[keyName] = true;
+}
+
+function stopDpadMovement(keyName) {
+  keys[keyName] = false;
+}
+
+const dpadUp = document.getElementById('dpad-up');
+const dpadDown = document.getElementById('dpad-down');
+const dpadLeft = document.getElementById('dpad-left');
+const dpadRight = document.getElementById('dpad-right');
+
+if (dpadUp) {
+  dpadUp.addEventListener('mousedown', () => startDpadMovement('w'));
+  dpadUp.addEventListener('mouseup', () => stopDpadMovement('w'));
+  dpadUp.addEventListener('mouseleave', () => stopDpadMovement('w'));
+  dpadUp.addEventListener('touchstart', (e) => { e.preventDefault(); startDpadMovement('w'); });
+  dpadUp.addEventListener('touchend', () => stopDpadMovement('w'));
+}
+if (dpadDown) {
+  dpadDown.addEventListener('mousedown', () => startDpadMovement('s'));
+  dpadDown.addEventListener('mouseup', () => stopDpadMovement('s'));
+  dpadDown.addEventListener('mouseleave', () => stopDpadMovement('s'));
+  dpadDown.addEventListener('touchstart', (e) => { e.preventDefault(); startDpadMovement('s'); });
+  dpadDown.addEventListener('touchend', () => stopDpadMovement('s'));
+}
+if (dpadLeft) {
+  dpadLeft.addEventListener('mousedown', () => startDpadMovement('a'));
+  dpadLeft.addEventListener('mouseup', () => stopDpadMovement('a'));
+  dpadLeft.addEventListener('mouseleave', () => stopDpadMovement('a'));
+  dpadLeft.addEventListener('touchstart', (e) => { e.preventDefault(); startDpadMovement('a'); });
+  dpadLeft.addEventListener('touchend', () => stopDpadMovement('a'));
+}
+if (dpadRight) {
+  dpadRight.addEventListener('mousedown', () => startDpadMovement('d'));
+  dpadRight.addEventListener('mouseup', () => stopDpadMovement('d'));
+  dpadRight.addEventListener('mouseleave', () => stopDpadMovement('d'));
+  dpadRight.addEventListener('touchstart', (e) => { e.preventDefault(); startDpadMovement('d'); });
+  dpadRight.addEventListener('touchend', () => stopDpadMovement('d'));
+}
+
+// Telemetry Log Box dynamic generator
+const engineLogsBox = document.getElementById("engine-logs-box");
+const mockCombatLogs = [
+  "HACK DETECTED in Sector X-799...",
+  "Quantum shield deployed at 94%...",
+  "Synapse breach mitigated.",
+  "Neural uplink latency synced at 4ms.",
+  "EXO-thruster fuel core stabilized.",
+  "Telemetry vectors converging on target...",
+  "Alliance signal established in Grid A-12.",
+  "Intrusion script quarantined in buffer.",
+  "Anomaly identified in Leaflet GPS radar feed.",
+  "Aetheria core engine reboot completed."
+];
+
+function appendEngineLog(text) {
+  if (!engineLogsBox) return;
+  const p = document.createElement("p");
+  p.style.margin = "0";
+  p.style.borderLeft = "2px solid rgba(0, 242, 254, 0.4)";
+  p.style.paddingLeft = "6px";
+  p.innerHTML = `<span style="color: #1f3d7a;">[${new Date().toLocaleTimeString()}]</span> ${text}`;
+  engineLogsBox.appendChild(p);
+  
+  // Smooth scroll to bottom
+  engineLogsBox.scrollTop = engineLogsBox.scrollHeight;
+}
+
+// Fire continuous telemetry logs every 2 seconds
+setInterval(() => {
+  if (isJoined) {
+    const log = mockCombatLogs[Math.floor(Math.random() * mockCombatLogs.length)];
+    appendEngineLog(`> ${log}`);
+  }
+}, 2000);

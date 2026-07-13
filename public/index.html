@@ -73,14 +73,14 @@
 
         <!-- SECTION 02: TACTICAL LOADOUT -->
         <article class="dash-panel loadout-panel glass-panel">
-          <div class="panel-tag">SEC 02 // WEAPON LOADOUT</div>
+          <div class="panel-tag">SEC 02 // WEAPON & SYNERGY MATRIX</div>
           <div class="weapon-display">
             <div class="weapon-info">
               <h3 class="weapon-name">EXO-RIFLE // PHANTOM</h3>
               <span class="weapon-class">CLASS A DEPLOYMENT</span>
             </div>
             <div class="weapon-preview">
-              <!-- Holographic weapon schematic using pure CSS/SVG -->
+              <!-- Holographic weapon schematic using pure SVG -->
               <svg viewBox="0 0 100 30" class="weapon-svg">
                 <path d="M 10,15 L 20,15 L 25,10 L 60,10 L 65,15 L 85,15 L 90,20 L 75,20 L 70,22 L 60,22 L 55,20 L 20,20 Z" fill="none" stroke="#00f2fe" stroke-width="1" stroke-dasharray="2,2"/>
                 <line x1="25" y1="12" x2="55" y2="12" stroke="#00f2fe" stroke-width="0.5"/>
@@ -98,71 +98,47 @@
               <span id="val-damage" class="stat-val">82%</span>
             </div>
             <div class="stat-row">
-              <span class="stat-label">RANGE</span>
+              <span class="stat-label">INTEGRITY</span>
               <div class="stat-bar-container">
-                <div id="bar-range" class="stat-bar-fill" style="width: 75%"></div>
+                <div id="bar-integrity" class="stat-bar-fill" style="width: 40%; transition: width 0.6s cubic-bezier(0.16, 1, 0.3, 1);"></div>
               </div>
-              <span id="val-range" class="stat-val">75%</span>
+              <span id="val-integrity" class="stat-val">40%</span>
             </div>
             <div class="stat-row">
-              <span class="stat-label">ACCURACY</span>
+              <span class="stat-label">OVERDRIVE</span>
               <div class="stat-bar-container">
-                <div id="bar-accuracy" class="stat-bar-fill" style="width: 90%"></div>
+                <div id="bar-overdrive" class="stat-bar-fill" style="width: 95%; transition: width 0.6s cubic-bezier(0.16, 1, 0.3, 1);"></div>
               </div>
-              <span id="val-accuracy" class="stat-val">90%</span>
+              <span id="val-overdrive" class="stat-val">95%</span>
             </div>
           </div>
         </article>
 
         <!-- SECTION 03: PILOT CLASS SELECTION -->
-        <article class="dash-panel class-panel glass-panel">
-          <div class="panel-tag">SEC 03 // PILOT CLASS SELECTION</div>
-          <div class="class-selection-container">
+        <article class="dash-panel class-panel glass-panel" id="active-class-card" style="transition: all 0.3s ease;">
+          <div class="panel-tag">SEC 03 // PILOT CLASS CAROUSEL</div>
+          <div class="class-carousel-container" style="display: flex; align-items: center; justify-content: space-between; gap: 15px; width: 100%;">
+            <button type="button" id="btn-prev-class" class="carousel-btn" style="background: rgba(31,61,122,0.2); border: 1px solid rgba(0,242,254,0.3); color: #00f2fe; padding: 10px; cursor: pointer; border-radius: 6px; font-weight: bold; transition: all 0.3s;">◀</button>
             
-            <!-- MANTA Class (Ares Archetype) -->
-            <div class="avatar-option active" data-gender="male" data-class="manta">
-              <div class="class-header">
-                <span class="class-code">MN-01</span>
-                <span class="class-title">MANTA</span>
+            <div class="avatar-option active" style="flex-grow: 1; text-align: center; background: transparent; border: none; box-shadow: none; padding: 0;">
+              <div class="class-header" style="justify-content: center; gap: 10px;">
+                <span class="class-code" id="active-class-code">MN-01</span>
+                <span class="class-title" id="active-class-name">NETRUNNER</span>
               </div>
-              <div class="avatar-preview-canvas-holder">
-                <canvas id="canvas-preview-male" width="80" height="80"></canvas>
-              </div>
-              <div class="class-footer">
-                <span class="option-label">ARES // SHIELD</span>
-              </div>
-            </div>
-
-            <!-- GHOST Class (Athena Archetype) -->
-            <div class="avatar-option" data-gender="female" data-class="ghost">
-              <div class="class-header">
-                <span class="class-code">GH-02</span>
-                <span class="class-title">GHOST</span>
-              </div>
-              <div class="avatar-preview-canvas-holder">
-                <canvas id="canvas-preview-female" width="80" height="80"></canvas>
+              <div class="avatar-preview-canvas-holder" style="margin: 10px auto; position: relative;">
+                <canvas id="active-class-preview-canvas" width="80" height="80"></canvas>
+                <div id="badge-locked" class="locked-badge-pill" style="display: none; position: absolute; bottom: -5px; left: 50%; transform: translateX(-50%); background: #00f2fe; color: #030816; font-size: 0.55rem; font-weight: 950; font-family: 'Orbitron', sans-serif; padding: 2px 8px; border-radius: 4px; box-shadow: 0 0 10px #00f2fe; letter-spacing: 0.5px;">LOCKED IN</div>
               </div>
               <div class="class-footer">
-                <span class="option-label">ATHENA // HALO</span>
+                <span class="option-label" id="active-class-label">NETRUNNER // OVERDRIVE</span>
               </div>
             </div>
-
-            <!-- SCYLA Class (Athena Archetype) -->
-            <div class="avatar-option" data-gender="female" data-class="scyla">
-              <div class="class-header">
-                <span class="class-code">SC-03</span>
-                <span class="class-title">SCYLA</span>
-              </div>
-              <div class="avatar-preview-canvas-holder">
-                <!-- Share Athena preview rendering for Scyla -->
-                <div class="scyla-preview-placeholder">⚜️</div>
-              </div>
-              <div class="class-footer">
-                <span class="option-label">ATHENA // CRUISE</span>
-              </div>
-            </div>
-
+            
+            <button type="button" id="btn-next-class" class="carousel-btn" style="background: rgba(31,61,122,0.2); border: 1px solid rgba(0,242,254,0.3); color: #00f2fe; padding: 10px; cursor: pointer; border-radius: 6px; font-weight: bold; transition: all 0.3s;">▶</button>
           </div>
+          <button type="button" id="btn-lock-class" class="hud-btn glow-button-alt" style="margin-top: 12px; font-family: 'Orbitron', sans-serif; font-size: 0.7rem; font-weight: bold;">
+            <span>LOCK IN NEURAL ARCHETYPE</span>
+          </button>
         </article>
       </div>
 
@@ -303,14 +279,25 @@
         </ol>
       </aside>
 
-      <!-- Active Controls Guide (Bottom Right) -->
-      <section id="hud-bottom-right" class="hud-item glass-panel">
-        <div class="controls-guide">
+      <!-- Active Controls Guide & Vector D-Pad (Bottom Right) -->
+      <section id="hud-bottom-right" class="hud-item glass-panel" style="display: flex; flex-direction: column; align-items: center; gap: 8px;">
+        <div class="controls-guide" style="border-bottom: 1px dashed rgba(31,61,122,0.3); padding-bottom: 8px; margin-bottom: 4px; width: 100%; display: flex; justify-content: center; gap: 6px;">
           <span class="key">W</span>
           <span class="key">A</span>
           <span class="key">S</span>
           <span class="key">D</span>
-          <span class="key-desc">Move Avatar</span>
+          <span class="key-desc" style="line-height: 2;">Move</span>
+        </div>
+        <div class="dpad-grid" style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 4px; width: 90px; height: 90px;">
+          <div></div>
+          <button id="dpad-up" class="dpad-btn">▲</button>
+          <div></div>
+          <button id="dpad-left" class="dpad-btn">◀</button>
+          <div style="background: rgba(31,61,122,0.3); border-radius: 4px; display: flex; align-items: center; justify-content: center; font-size: 0.5rem; color: #00f2fe; font-family: 'Orbitron', sans-serif;">D-PD</div>
+          <button id="dpad-right" class="dpad-btn">▶</button>
+          <div></div>
+          <button id="dpad-down" class="dpad-btn">▼</button>
+          <div></div>
         </div>
       </section>
 
@@ -331,6 +318,19 @@
         </form>
       </section>
       
+      <!-- Engine Logs Panel (Bottom Left, stacked with chat) -->
+      <section id="hud-engine-logs" class="hud-item glass-panel" style="margin-top: 10px; max-height: 120px; overflow: hidden; display: flex; flex-direction: column;">
+        <span class="minimap-label" style="margin-bottom: 4px; font-size: 0.6rem;">[// ENGINE_LOGS]</span>
+        <div id="engine-logs-box" class="chat-log" style="flex-grow: 1; overflow-y: auto; font-family: 'Share Tech Mono', monospace; font-size: 0.7rem; color: rgba(0, 242, 254, 0.85); display: flex; flex-direction: column; gap: 4px; padding: 2px 0;">
+          <p style="color: #1f3d7a; margin: 0;">// Core engine link established.</p>
+        </div>
+      </section>
+      
+      <!-- Glowing Coordinate Overlay (Center-Bottom) -->
+      <div id="hud-coordinates-overlay" style="position: absolute; bottom: 85px; left: 50%; transform: translateX(-50%); font-family: 'Orbitron', sans-serif; font-size: 0.95rem; font-weight: 900; color: #00f2fe; text-shadow: 0 0 10px #00f2fe; z-index: 100; pointer-events: none; letter-spacing: 2px;">
+        STANDING BY [X: 1000, Y: 1000]
+      </div>
+
       <!-- Proximity Interaction Prompt (Center-bottom of screen) -->
       <div id="proximity-prompt" class="hud-item glass-panel hidden">
         <span class="prompt-key">E</span>
